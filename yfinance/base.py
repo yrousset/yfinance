@@ -49,7 +49,9 @@ class TickerBase():
         self._scrape_url = 'https://finance.yahoo.com/quote'
 
         self._fundamentals = False
+        self._short_fundamentals = False
         self._info = None
+        self._short_info = None
         self._sustainability = None
         self._recommendations = None
         self._major_holders = None
@@ -300,35 +302,35 @@ class TickerBase():
         # holders
         url = "{}/{}/holders".format(self._scrape_url, self.ticker)
         holders = _pd.read_html(url)
-        
-        if len(holders)>=3:
+
+        if len(holders) >= 3:
             self._major_holders = holders[0]
             self._institutional_holders = holders[1]
             self._mutualfund_holders = holders[2]
-        elif len(holders)>=2:
+        elif len(holders) >= 2:
             self._major_holders = holders[0]
             self._institutional_holders = holders[1]
         else:
             self._major_holders = holders[0]
-        
-        #self._major_holders = holders[0]
-        #self._institutional_holders = holders[1]
-        
+
+        # self._major_holders = holders[0]
+        # self._institutional_holders = holders[1]
+
         if self._institutional_holders is not None:
             if 'Date Reported' in self._institutional_holders:
                 self._institutional_holders['Date Reported'] = _pd.to_datetime(
-                self._institutional_holders['Date Reported'])
+                    self._institutional_holders['Date Reported'])
             if '% Out' in self._institutional_holders:
                 self._institutional_holders['% Out'] = self._institutional_holders[
-                '% Out'].str.replace('%', '').astype(float)/100
+                                                           '% Out'].str.replace('%', '').astype(float) / 100
 
         if self._mutualfund_holders is not None:
             if 'Date Reported' in self._mutualfund_holders:
                 self._mutualfund_holders['Date Reported'] = _pd.to_datetime(
-                self._mutualfund_holders['Date Reported'])
+                    self._mutualfund_holders['Date Reported'])
             if '% Out' in self._mutualfund_holders:
                 self._mutualfund_holders['% Out'] = self._mutualfund_holders[
-                '% Out'].str.replace('%', '').astype(float)/100
+                                                        '% Out'].str.replace('%', '').astype(float) / 100
 
         # sustainability
         d = {}
@@ -390,20 +392,20 @@ class TickerBase():
             pass
 
         # get fundamentals
-        data = utils.get_json(url+'/financials', proxy)
+        data = utils.get_json(url + '/financials', proxy)
 
         # generic patterns
         for key in (
-            (self._cashflow, 'cashflowStatement', 'cashflowStatements'),
-            (self._balancesheet, 'balanceSheet', 'balanceSheetStatements'),
-            (self._financials, 'incomeStatement', 'incomeStatementHistory')
+                (self._cashflow, 'cashflowStatement', 'cashflowStatements'),
+                (self._balancesheet, 'balanceSheet', 'balanceSheetStatements'),
+                (self._financials, 'incomeStatement', 'incomeStatementHistory')
         ):
 
             item = key[1] + 'History'
             if isinstance(data.get(item), dict):
                 key[0]['yearly'] = cleanup(data[item][key[2]])
 
-            item = key[1]+'HistoryQuarterly'
+            item = key[1] + 'HistoryQuarterly'
             if isinstance(data.get(item), dict):
                 key[0]['quarterly'] = cleanup(data[item][key[2]])
 
@@ -421,6 +423,29 @@ class TickerBase():
             self._earnings['quarterly'] = df
 
         self._fundamentals = True
+
+    def _get_short_fundamentals(self, kind=None, proxy=None):
+        # setup proxy in requests format
+        if proxy is not None:
+            if isinstance(proxy, dict) and "https" in proxy:
+                proxy = proxy["https"]
+            proxy = {"https": proxy}
+
+        if self._short_fundamentals:
+            return
+
+        # get info and sustainability
+        url = '%s/%s' % (self._scrape_url, self.ticker)
+        data = utils.get_json(url, proxy)
+
+        # info (be nice to python 2)
+        self._short_info = {}
+        items = ['summaryProfile', 'summaryDetail', 'quoteType', 'defaultKeyStatistics', 'assetProfile', 'summaryDetail']
+        for item in items:
+            if isinstance(data.get(item), dict):
+                self._short_info.update(data[item])
+
+        self._short_fundamentals = True
 
     def get_recommendations(self, proxy=None, as_dict=False, *args, **kwargs):
         self._get_fundamentals(proxy)
@@ -462,6 +487,13 @@ class TickerBase():
     def get_info(self, proxy=None, as_dict=False, *args, **kwargs):
         self._get_fundamentals(proxy)
         data = self._info
+        if as_dict:
+            return data.to_dict()
+        return data
+
+    def get_short_info(self, proxy=None, as_dict=False, *args, **kwargs):
+        self._get_short_fundamentals(proxy)
+        data = self._short_info
         if as_dict:
             return data.to_dict()
         return data

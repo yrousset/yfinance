@@ -28,6 +28,7 @@ def test_yfinance():
         assert(ticker.history(period="max").empty is False)
 
         # following should always gracefully handled, no crashes
+        ticker.short_info
         ticker.cashflow
         ticker.balance_sheet
         ticker.financials
@@ -43,21 +44,21 @@ def test_yfinance():
     print(">> F", end=" ... ")
     assert(ticker.info is not None and ticker.info != {})
     assert(ticker.major_holders is not None)
-    assert(ticker.institutional_holders is None)
+    assert(ticker.institutional_holders is not None)
     print("OK")
     # NKLA has no institutional investors table or mutual fund holders
     ticker = yf.Ticker('NKLA')
     print(">> NKLA", end=" ... ")
     assert(ticker.info is not None and ticker.info != {})
     assert(ticker.major_holders is not None)
-    assert(ticker.institutional_holders is None)
+    assert(ticker.institutional_holders is not None)
     print("OK")
     # NKLA has no institutional investors table or mutual fund holders
     ticker = yf.Ticker('NESN.SW')
     print(">> NESN.SW", end=" ... ")
     assert(ticker.info is not None and ticker.info != {})
     assert(ticker.major_holders is not None)
-    assert(ticker.institutional_holders is None)
+    assert(ticker.institutional_holders is not None)
     print("OK")
 
 if __name__ == "__main__":

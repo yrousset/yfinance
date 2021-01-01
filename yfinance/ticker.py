@@ -138,6 +138,10 @@ class Ticker(TickerBase):
         return self.get_info()
 
     @property
+    def short_info(self):
+        return self.get_short_info()
+
+    @property
     def calendar(self):
         return self.get_calendar()
 
